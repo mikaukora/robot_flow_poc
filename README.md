@@ -6,9 +6,19 @@
 
 ## Running robot_flow
 
+Help is available for sub-commands
+
 `robot_flow --help`
 
 `robot_flow get-tests --help`
+
+Get tests/tasks from Robot FW file.
+
+`robot_flow get-tests test.robot`
+
+Get tests/tasks from GRAPHML file, with optional verbosity:
+
+`robot_flow list-graph task.graphml -v`
 
 ## Listeners
 
