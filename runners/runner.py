@@ -96,7 +96,7 @@ class Flow(object):
         if cond.lower() not in ["true", "false"]:
             raise NotImplementedError("only true or false are accepted as conditions")
 
-def parse_graph(filename):
+def parse_graph(filename, verbose=False):
     tree = ET.parse(str(filename))
     root = tree.getroot()
 
@@ -114,14 +114,14 @@ def parse_graph(filename):
         nodes[label]["target"] = None
         id2node[id] = label
 
-    if self.verbose:
+    if verbose:
         print(nodes)
         print(id2node)
 
     for e in root.iter('{http://graphml.graphdrawing.org/xmlns}edge'):
         source = id2node[e.attrib["source"]]
         target = id2node[e.attrib["target"]]
-        if self.verbose:
+        if verbose:
             print(source + ":" + target)
         target_label = None
         for label in e.iter('{http://www.yworks.com/xml/graphml}EdgeLabel'):
@@ -168,7 +168,7 @@ class Runner(SuiteVisitor):
             graph = Path(graph_file)
             if not graph.exists():
                 raise DataError("File not found: {}".format(graph_file))
-            self.parsed_graph = parse_graph(graph_file)
+            self.parsed_graph = parse_graph(graph_file, self.verbose)
             self.flow = Flow(self.parsed_graph)
 
             # Special logic to allow controlling the next executed test.
