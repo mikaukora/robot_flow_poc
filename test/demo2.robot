@@ -1,5 +1,5 @@
 *** Settings ***
-Resource            keywords.robot
+Resource            ${CURDIR}/../resources/keywords.robot
 Suite Setup         Setup Tests
 Suite Teardown      Close All Browsers
 

@@ -182,7 +182,6 @@ class Runner(SuiteVisitor):
                 if self.verbose:
                     print("runner.py: Starting {}".format(test.name))
                 test.visit(self)
-                #import sys, pdb; pdb.Pdb(stdout=sys.__stdout__).set_trace()
                 output = BuiltIn().get_variable_value("${OUTPUT}")
                 if self.verbose:
                     print("runner.py: Completed {}, output {}".format(test.name, output))

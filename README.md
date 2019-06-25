@@ -4,6 +4,28 @@
 
 `pip install -e .`
 
+## Running flow chart
+
+Install custom Robot FW runner (virtual env recommended):
+
+`python utils\patch_robot.py runners\runner.py`
+
+Run task script. The tool assumes that graphml file with the same
+name exists together with Robot FW file:
+
+`robot --rpa test\demo1.robot`
+
+## Editing flow charts
+
+Use yED editor to edit flow charts. Save them in graphml format.
+Robot FW script should contain task cases with exact same names
+as in flow chart.
+
+Note: Currently flow chart cannot contain multiple items with the same name.
+
+Note: Decision branches rely on ${OUTPUT} variable. It must be set
+to True or False.
+
 ## Running robot_flow
 
 Help is available for sub-commands

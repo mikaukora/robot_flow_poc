@@ -1,5 +1,5 @@
 *** Settings ***
-Resource            ../resources/keywords.robot
+Resource            ${CURDIR}/../resources/keywords.robot
 Suite Setup         Setup QVision
 Suite Teardown      End suite
 Test Setup        Log   In test setup        console=True
