@@ -28,7 +28,7 @@ from .status import SuiteStatus, TestStatus
 from .timeouts import TestTimeout
 
 from robot.libraries.BuiltIn import BuiltIn
-from pathlib2 import Path
+from pathlib import Path
 import xml.etree.ElementTree as ET
 
 class Flow(object):
