@@ -1,18 +1,15 @@
 *** Settings ***
+
 Resource            demo1_keywords.robot
-*** Settings ***
 Suite Setup         Setup Browser
 Suite Teardown      Close All Browsers
 
 *** Variables ***
-${OUTPUT}=          True
+
 ${COUNTER}=         0
-#${COUNTER_MAX}=     2
 
-@{SEARCH_TEXTS}=    Qentinel  Robocorptech
-@{CURRENT_TERM}=    None
-
-@{SEARCH_IMAGES}=   Robotic software testing  Cat  Dog
+@{SEARCH_TEXTS}=    Qentinel  Flow based programming
+@{SEARCH_IMAGES}=   Robotic software testing  Cat  Dog  Porche
 
 *** Test Cases ***
 
@@ -38,31 +35,28 @@ Search Image
 
 More items?
     Set Suite Variable  ${OUTPUT}       True
-    Log    Checking counter
-    Log    ${COUNTER}    console=True
-    ${COUNTER_MAX}=  GetLength  ${SEARCH_TEXTS}
-    ${COUNTER_MAX}=  DecVal  ${COUNTER_MAX}
-    Log  ${COUNTER_MAX}  console=True
+    ${COUNTER_MAX}=  GetMax  @{SEARCH_TEXTS}
+
     ${MATCH}=    EqualVal    ${COUNTER}    ${COUNTER_MAX}
-    Run Keyword If     ${MATCH}    Set Suite Variable    ${OUTPUT}    False
+    Run Keyword If     ${MATCH}
+    ...  Set Suite Variable    ${OUTPUT}    False
+
     ${COUNTER}=    IncVal    ${COUNTER}
     Set Suite Variable    ${COUNTER}
 
 More images?
     Set Suite Variable  ${OUTPUT}       True
-    Log    Checking counter
-    Log    ${COUNTER}    console=True
-    ${COUNTER_MAX}=  GetLength  ${SEARCH_IMAGES}
-    ${COUNTER_MAX}=  DecVal  ${COUNTER_MAX}
-    Log  ${COUNTER_MAX}  console=True
+    ${COUNTER_MAX}=  GetMax  @{SEARCH_IMAGES}
+
     ${MATCH}=    EqualVal    ${COUNTER}    ${COUNTER_MAX}
-    Run Keyword If     ${MATCH}    Set Suite Variable    ${OUTPUT}    False
+    Run Keyword If     ${MATCH}
+    ...  Set Suite Variable    ${OUTPUT}    False
+
     ${COUNTER}=    IncVal    ${COUNTER}
     Set Suite Variable    ${COUNTER}
 
 Reset Counters
     Set Suite Variable  ${COUNTER}      0
-    #Set Suite Variable  ${COUNTER_MAX}  2
 
 Start
     Log    Start
@@ -70,3 +64,12 @@ Start
 End
     Sleep  5
     Log    End
+
+
+*** keywords ***
+
+GetMax
+    [arguments]  @{MyList}
+    ${COUNTER_MAX}=  GetLength  ${MyList}
+    ${COUNTER_MAX}=  DecVal  ${COUNTER_MAX}
+    [return]  ${COUNTER_MAX}

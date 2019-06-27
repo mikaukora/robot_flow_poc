@@ -33,8 +33,8 @@ import xml.etree.ElementTree as ET
 
 class Flow(object):
     """ Custom class for flow control """
-    def __init__(self, graph, initial=None):
-        self.verbose = False
+    def __init__(self, graph, initial=None, verbose=False):
+        self.verbose = verbose
         self.graph = graph
         print(self.graph)
         if initial:
@@ -43,6 +43,52 @@ class Flow(object):
             self.initial = self.parse_initial()
         self._state = None 
         self.running = False
+
+    @classmethod
+    def from_graphml(cls, script_file, verbose=False):
+
+        print("Script file: {}".format(script_file))
+        graph_file = script_file.split(".")[0] + ".graphml"
+        print("GraphML file: {}".format(graph_file))
+        graph = Path(graph_file)
+        if not graph.exists():
+            raise DataError("File not found: {}".format(graph_file))
+
+        tree = ET.parse(str(graph_file))
+        root = tree.getroot()
+
+        id2node = {}
+        nodes = {}
+        for e in root.iter('{http://graphml.graphdrawing.org/xmlns}node'):
+            id = e.attrib["id"]
+            for label in e.iter('{http://www.yworks.com/xml/graphml}GenericNode'):
+                type = label.attrib["configuration"]
+            for label in e.iter('{http://www.yworks.com/xml/graphml}NodeLabel'):
+                label = label.text
+            nodes[label] = {}
+            nodes[label]["id"] = id
+            nodes[label]["type"] = type
+            nodes[label]["target"] = None
+            id2node[id] = label
+
+        if verbose:
+            print(nodes)
+            print(id2node)
+
+        for e in root.iter('{http://graphml.graphdrawing.org/xmlns}edge'):
+            source = id2node[e.attrib["source"]]
+            target = id2node[e.attrib["target"]]
+            if verbose:
+                print(source + ":" + target)
+            target_label = None
+            for label in e.iter('{http://www.yworks.com/xml/graphml}EdgeLabel'):
+                target_label = label.text
+            if not nodes[source]["target"]:
+                nodes[source]["target"] = [(target, target_label)]
+            else:
+                # multiple targets
+                nodes[source]["target"].append((target, target_label))
+        return cls(nodes, verbose=verbose)
 
     def parse_initial(self):
         for s in self.graph:
@@ -90,56 +136,27 @@ class Flow(object):
                 self._state = n
                 return n
 
+    def next_as_obj(self, input=None, tests=None):
+        return self.str2test(self.next(input), tests)
 
     def _validate_cond(self, cond):
         """ Validate allowed strings to be passed for evaluation """
         if cond.lower() not in ["true", "false"]:
             raise NotImplementedError("only true or false are accepted as conditions")
 
-def parse_graph(filename, verbose=False):
-    tree = ET.parse(str(filename))
-    root = tree.getroot()
-
-    id2node = {}
-    nodes = {}
-    for e in root.iter('{http://graphml.graphdrawing.org/xmlns}node'):
-        id = e.attrib["id"]
-        for label in e.iter('{http://www.yworks.com/xml/graphml}GenericNode'):
-            type = label.attrib["configuration"]
-        for label in e.iter('{http://www.yworks.com/xml/graphml}NodeLabel'):
-            label = label.text
-        nodes[label] = {}
-        nodes[label]["id"] = id
-        nodes[label]["type"] = type
-        nodes[label]["target"] = None
-        id2node[id] = label
-
-    if verbose:
-        print(nodes)
-        print(id2node)
-
-    for e in root.iter('{http://graphml.graphdrawing.org/xmlns}edge'):
-        source = id2node[e.attrib["source"]]
-        target = id2node[e.attrib["target"]]
-        if verbose:
-            print(source + ":" + target)
-        target_label = None
-        for label in e.iter('{http://www.yworks.com/xml/graphml}EdgeLabel'):
-            target_label = label.text
-        if not nodes[source]["target"]:
-            nodes[source]["target"] = [(target, target_label)]
-        else:
-            # multiple targets
-            nodes[source]["target"].append((target, target_label))
-    return nodes
-
+    def str2test(self, testname, tests):
+        """ Return test case object """
+        for t in tests:
+            if testname == t.name:
+                return t
+        return None
 
 # Some 'extract method' love needed here. Perhaps even 'extract class'.
 
 class Runner(SuiteVisitor):
 
     def __init__(self, output, settings):
-        self.verbose = False
+        self.verbose = True
         self.result = None
         self._output = output
         self._settings = settings
@@ -156,28 +173,16 @@ class Runner(SuiteVisitor):
         """ Overwritten version.
         """
         if self.verbose:
-            print("visit_suite: {}, {}, tests: {}".format(suite, type(suite), suite.tests))
+            print("Suite {} tests: {}".format(suite, suite.tests))
 
         if self.start_suite(suite) is not False:            
             suite.keywords.visit(self)
             suite.suites.visit(self)
 
-            print("Script file: {}".format(suite.source))
-            graph_file = suite.source.split(".")[0] + ".graphml"
-            print("GraphML file: {}".format(graph_file))
-            graph = Path(graph_file)
-            if not graph.exists():
-                raise DataError("File not found: {}".format(graph_file))
-            self.parsed_graph = parse_graph(graph_file, self.verbose)
-            self.flow = Flow(self.parsed_graph)
-
             # Special logic to allow controlling the next executed test.
-            self.tests = suite.tests
-            
+            self.flow = Flow.from_graphml(suite.source, self.verbose)
             output = BuiltIn().get_variable_value("${OUTPUT}")
-            test = self.str2test(self.flow.next(output))
-            if self.verbose:
-                print("Next test: {}, {}".format(test, self.tests))
+            test = self.flow.next_as_obj(output, suite.tests)
             while test:
                 if self.verbose:
                     print("runner.py: Starting {}".format(test.name))
@@ -185,17 +190,10 @@ class Runner(SuiteVisitor):
                 output = BuiltIn().get_variable_value("${OUTPUT}")
                 if self.verbose:
                     print("runner.py: Completed {}, output {}".format(test.name, output))
-                test = self.str2test(self.flow.next(output))
+                test = self.flow.next_as_obj(output, suite.tests)
 
-            self.end_suite(suite)
+        self.end_suite(suite)
 
-    def str2test(self, testname):
-        """ Return test case object """
-        for t in self.tests:
-            if testname == t.name:
-                return t
-        return None
-        
     def start_suite(self, suite):
         self._output.library_listeners.new_suite_scope()
         result = TestSuite(source=suite.source,
