@@ -12,15 +12,3 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
-import click
-from robot_flow import get_tests, list_graph
-
-
-@click.group()
-def cli():
-    """Entry point for commands."""
-    pass
-
-cli.add_command(get_tests.get_tests)
-cli.add_command(list_graph.list_graph)
